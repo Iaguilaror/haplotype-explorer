@@ -1,0 +1,11 @@
+# ignore nf logs
+*.nextflow.log
+
+# ignore workdirs
+*work
+
+# ignore hidden nextflow dirs
+*.nextflow/
+
+# ignore test results
+nfmodules/*/test/results/
