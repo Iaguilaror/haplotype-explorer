@@ -1,6 +1,9 @@
 # remove previous tests
 rm -rf .nextflow.log* work
 
+# remove previous results
+rm -rf test/results
+
 # create a results dir
 mkdir -p test/results
 
@@ -11,5 +14,5 @@ nextflow run main.nf \
   --input_regions test/references/regions.txt
 
 # move module results and move to test/results
-mv work/*/*/*.filtered.vcf \
+mv work/*/*/*.filtered.vcf test/results/ \
 && rm -rf work                # delete workdir only if final results were found
