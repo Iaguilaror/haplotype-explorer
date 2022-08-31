@@ -53,30 +53,3 @@ process vep_annotate {
     Rscript --vanilla merge.R $vcf $vcf".vep.annotated.tsv"
     """
 }
-//
-// /* gather [vcf and index] + regions */
-// module_input_vcf
-//   .combine( results_sep_regions )
-//   // .view( )
-//   .set{ module_input_forfilter }
-//
-// /* Filter VCF by each region */
-// process filter_vcf {
-//
-//   input:
-//   file vcf_set from module_input_forfilter
-//
-//   output:
-//   file "*.filtered.vcf" into results_filter_vcf
-//
-//   """
-//   regionposition=\$( cut -d" " -f1 region_* )
-//   regionname=\$( cut -d" " -f2 region_* )
-//   bcftools view *.vcf.gz \$regionposition \
-//   | bcftools norm --multiallelics -any \
-//   | bcftools view --types snps \
-//   | bcftools annotate \
-//     --remove FORMAT,QUAL,^INFO/AC,INFO/AF,INFO/AN \
-//     > \$regionname.filtered.vcf
-//   """
-// }

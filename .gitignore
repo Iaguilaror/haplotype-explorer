@@ -9,3 +9,6 @@
 
 # ignore test results
 nfmodules/*/test/results/
+
+# ignore .Rhistory
+*.Rhistory

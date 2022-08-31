@@ -46,7 +46,9 @@ Compatible OS*:
 | R package | Function |
 |-----------|----------|
 | dplyr |magrittr, filter(), mutate(), select(), arrange() |
-| tidyr |pivot_longer() |
+| vcfR |read.vcf() |
+| tidyr |separate() |
+| stringr |str_remove() |
 | scales | colour pallettes |
 | ggplot2 | geom_col( ), ggplot() |
 | vroom | vroom () |
