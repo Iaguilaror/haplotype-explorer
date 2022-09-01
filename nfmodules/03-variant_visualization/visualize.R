@@ -23,14 +23,29 @@ output_1ksvg <- str_replace( string = input_tsv,
                              pattern = ".tsv",
                              replacement = ".1kgFreqs.svg" )
 
+output_1ktsv <- str_replace( string = input_tsv,
+                             pattern = ".tsv",
+                             replacement = ".1kgFreqs.tsv" )
+
 # read the data
 variants <- vroom( file = input_tsv ) %>%
   filter( AC != 1 )
 
+# reorder data to add index
+reordered <- variants %>% 
+  separate( data = .,
+            col = Location,
+            into = c("chrom", "pos"), remove = FALSE,
+            sep = ":" ) %>% 
+  mutate( pos = as.numeric( pos ) ) %>% 
+  arrange( chrom, pos ) %>% 
+  mutate( plot_index = 1:n( ),
+          .before = Uploaded_variation )
+
 # create barplot
-forbars_data <- variants %>%
-  select( Uploaded_variation, Existing_variation, AFR_AF:SAS_AF, AF ) %>%
-  pivot_longer( cols = 3:ncol(.),
+forbars_data <- reordered %>%
+  select( plot_index, chrom, pos, Uploaded_variation, Existing_variation, AFR_AF:SAS_AF, AF ) %>%
+  pivot_longer( cols = 6:ncol(.),
                 names_to = "pop",
                 values_to = "freq" ) %>%
   mutate( tag = ifelse( test = is.na( Existing_variation ),
@@ -54,15 +69,24 @@ cromosoma <- unique( cromdata$chr )
 startpos <- min( cromdata$pos ) %>% prettyNum( x = ., big.mark = "," )
 endpos <- max( cromdata$pos ) %>% prettyNum( x = ., big.mark = "," )
 
+# prepare axis
+xbreaks <- reordered %>% 
+  pull( plot_index )
+
+xlabs <- reordered %>% 
+  pull( Existing_variation )
+
 # plot data
 bars1k <- ggplot( data = forbars_data,
-                  mapping = aes( x = tag,
+                  mapping = aes( x = plot_index,
                                  y = freq,
                                  fill = pop ) ) +
   geom_col( position = "dodge",
             mapping = aes( alpha = freq ) ) +
   geom_col( data = forbars_tmp, color = "black", position = "dodge", size = 0.2 ) +
   scale_y_continuous( labels = percent ) +
+  scale_x_continuous( breaks = xbreaks,
+                      labels = xlabs ) +
   scale_fill_npg( ) +
   labs( title = paste( "SNPs in region:", titulo ) ,
         subtitle = paste( cromosoma, "from", startpos, "nt to", endpos, "nt" ),
@@ -84,3 +108,11 @@ ggsave( filename = output_1ksvg,
         plot = bars1k,
         width = 15,
         height = 10 )
+
+# save table for 1kGP
+reordered %>% 
+  select( Uploaded_variation, chrom, pos,
+          Allele, Existing_variation,
+          AC, AN, AF, AFR_AF:SAS_AF ) %>% 
+  write.table( x = ., file = output_1ktsv, append = FALSE, quote = FALSE,
+               sep = "\t", row.names = FALSE, col.names = TRUE )

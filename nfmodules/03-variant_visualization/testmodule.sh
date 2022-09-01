@@ -11,5 +11,5 @@ mkdir -p test/results
 nextflow run main.nf
 
 # move module results and move to test/results
-mv work/*/*/*.svg test/results/ \
+mv work/*/*/*.svg work/*/*/*.1kgFreqs.tsv test/results/ \
 && rm -rf work                # delete workdir only if final results were found
