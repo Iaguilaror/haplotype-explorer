@@ -27,6 +27,10 @@ output_1ktsv <- str_replace( string = input_tsv,
                              pattern = ".tsv",
                              replacement = ".1kgFreqs.tsv" )
 
+output_haplodots <- str_replace( string = input_tsv,
+                                 pattern = ".tsv",
+                                 replacement = ".haplodots.svg" )
+
 # read the data
 variants <- vroom( file = input_tsv ) %>%
   filter( AC != 1 )
@@ -116,3 +120,118 @@ reordered %>%
           AC, AN, AF, AFR_AF:SAS_AF ) %>% 
   write.table( x = ., file = output_1ktsv, append = FALSE, quote = FALSE,
                sep = "\t", row.names = FALSE, col.names = TRUE )
+
+
+# intentamos un plot de haplotipo
+forhaplopaint <- reordered %>% 
+  select( pos, Allele, 26:ncol(.) ) %>% 
+  pivot_longer( data = .,
+                cols = 3:ncol(.),
+                names_to = "ID",
+                values_to = "gt" ) %>% 
+  mutate( gt = ifelse( test = gt == ".",
+                       yes = NA,
+                       no = gt ),
+          homhet = case_when( str_detect( string = gt, pattern = "[[:lower:]]") ~ "heterozygous",
+                              str_detect( string = gt, pattern = "[[:upper:]]") ~ "homozygous") ) %>% 
+  mutate( nt = toupper( gt ) )
+
+# create gt scale
+# mygtcolors <- c( "a" = "navyblue",
+#                  "A" = "navyblue",
+#                  "t" = "tomato",
+#                  "T" = "tomato",
+#                  "c" = "gold4",
+#                  "C" = "gold4",
+#                  "g" = "purple",
+#                  "G" = "purple" )
+mygtcolors <- c( 
+  "A" = "navyblue",
+  
+  "T" = "tomato",
+  
+  "C" = "gold4",
+  
+  "G" = "purple" )
+
+# create a gt size scale
+homsize <- 3
+hetzize <- 2
+
+# # create gt scale
+# mygtsize <- c( "a" = hetszize,
+#                "A" = homsize,
+#                "t" = hetszize,
+#                "T" = homsize,
+#                "c" = hetszize,
+#                "C" = homsize,
+#                "g" = hetszize,
+#                "G" = homsize )
+mygtsize <- c( "heterozygous" = hetzize,
+               "homozygous" = homsize )
+
+# create gt scale for shapes
+homshape <- 16
+hetshape <- 1
+
+# mygtshape <- c( "a" = hetshape,
+#                 "A" = homshape,
+#                 "t" = hetshape,
+#                 "T" = homshape,
+#                 "c" = hetshape,
+#                 "C" = homshape,
+#                 "g" = hetshape,
+#                 "G" = homshape )
+
+mygtshape <- c( "heterozygous" = hetshape,
+                "homozygous" = homshape )
+
+# create function for prettynum in x axis
+myprettynum <- function( the_number ) {
+  
+  prettyNum( x = the_number, big.mark = "," )
+  
+}
+
+# create plot
+haplodots <- ggplot( data = forhaplopaint) +
+  geom_segment( mapping = aes( x = min(pos),
+                               xend = max(pos),
+                               y = ID,
+                               yend = ID ), 
+                size = 0.05, lty = "dotted",
+                alpha = 0.1 ) +
+  geom_point( data = filter( forhaplopaint, !is.na( gt ) ),
+              mapping = aes( x = pos,
+                             y = ID,
+                             color = nt,
+                             shape = homhet,
+                             size = homhet 
+              ) ) +
+  scale_color_manual( values = mygtcolors ) +
+  scale_shape_manual( values = mygtshape ) +
+  scale_size_manual( values = mygtsize ) +
+  scale_x_continuous( labels = myprettynum ) +
+  labs( title = paste( "SNPs in region:", titulo ) ,
+        subtitle = paste( cromosoma, "from", startpos, "nt to", endpos, "nt" ),
+        caption = "Removed singletons from dataset",
+        x = "position",
+        y = "ID",
+        size = "zygosity",
+        shape = "zygosity" ) +
+  theme_classic( ) +
+  theme( plot.title = element_text( hjust = 0.5, size = 15 ),
+         plot.subtitle = element_text( hjust = 0.5, size = 12 ),
+         plot.caption = element_text( size = 12 ),
+         panel.grid.major.x = element_blank( ),
+         panel.grid.minor.x = element_blank( ),
+         # axis.text.x = element_text( angle = 90, hjust = 1, vjust = 0.5 ),
+         legend.position = "right",
+         legend.background = element_rect( color = "black" ) )  
+
+#
+# save as svg
+ggsave( filename = output_haplodots,
+        plot = haplodots,
+        width = 15,
+        height = 10 )
